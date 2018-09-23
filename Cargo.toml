@@ -1,0 +1,11 @@
+[package]
+name = "keyboard-midi"
+version = "0.1.0"
+authors = ["Hugh Rawlinson <hugh@spotify.com>"]
+
+[dependencies]
+midir = "0.5.0"
+
+[[bin]]
+name = "keyboard-midi"
+path = "main.rs"
