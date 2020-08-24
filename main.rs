@@ -2,16 +2,33 @@ extern crate midir;
 
 use std::error::Error;
 use std::io::{stdin, stdout, Write};
+use std::sync::{Arc, Mutex};
 use std::thread::sleep;
 use std::time::{Duration, Instant};
+// use ux::u7;
 
-use midir::MidiOutput;
+use midir::{MidiOutput, MidiOutputPort};
 
 const ZERO_DURATION: Duration = Duration::from_millis(0);
 
 type MusicalDuration = f32;
 type MusicalNote = u8;
 type MusicalScore<TimeUnit> = Vec<(MusicalNote, TimeUnit)>;
+
+// struct MusicalScoreNote {
+//     midi_note: u7,
+//     duration: Duration,
+//     start_time: Duration,
+//     velocity: u7
+// }
+
+// struct MusicalScore {
+//     score: Vec<MusicalScoreNote>
+// }
+
+// impl MusicalScore {
+//     fn
+// }
 
 fn main() {
     let score: MusicalScore<MusicalDuration> = vec![
@@ -40,37 +57,29 @@ fn main() {
     }
 }
 
-fn get_midi_output() -> Result<usize, Box<dyn Error>> {
+fn get_midi_output() -> Result<MidiOutputPort, Box<dyn Error>> {
     let midi_out = MidiOutput::new("My Test Output")?;
+    let mut ports = midi_out.ports();
 
     // Get an output port (read from console if multiple are available)
-    let out_port = match midi_out.port_count() {
+    let out_port = match ports.len() {
         0 => return Err("no output port found".into()),
-        1 => {
-            println!(
-                "Choosing the only available output port: {}",
-                midi_out.port_name(0).unwrap()
-            );
-            0
-        }
+        1 => ports.remove(0),
         _ => {
             println!("\nAvailable output ports:");
-            for i in 0..midi_out.port_count() {
-                println!("{}: {}", i, midi_out.port_name(i).unwrap());
+            for i in 0..ports.len() {
+                println!("{}: {}", i, midi_out.port_name(&ports[i]).unwrap());
             }
             print!("Please select output port: ");
             stdout().flush()?;
             let mut input = String::new();
             stdin().read_line(&mut input)?;
-            input.trim().parse()?
+            let parsed: usize = input.trim().parse().unwrap();
+            ports.remove(parsed)
         }
     };
 
     Ok(out_port)
-    // println!("\nOpening connection");
-    // let conn_out = midi_out.connect(out_port, "midir-test")?;
-    // println!("Connection open. Listen!");
-    // return Ok(conn_out);
 }
 
 fn total_length_from_score(score: &MusicalScore<(Duration, Duration)>) -> Duration {
@@ -83,7 +92,7 @@ fn total_length_from_score(score: &MusicalScore<(Duration, Duration)>) -> Durati
 fn run2(
     score: MusicalScore<MusicalDuration>,
     tempo: u8,
-    output_port: usize,
+    output_port: MidiOutputPort,
 ) -> Result<(), Box<dyn Error>> {
     let playback_position = Instant::now();
 
@@ -92,9 +101,11 @@ fn run2(
     let mut time_score = duration_score_to_start_time_score(score, quarter_note_duration);
     let playback_length = total_length_from_score(&time_score);
 
-    while playback_position.elapsed() < playback_length {
-        let (note, (start_time, end_time)) = time_score[0];
+    let arc_output_port = Arc::new(Mutex::new(output_port));
 
+    while playback_position.elapsed() < playback_length {
+        let (note, (start_time, end_time)) = time_score[0].clone();
+        let arc_output_port = Arc::clone(&arc_output_port);
         if playback_position.elapsed() > start_time {
             println!("Playing note: {}", note);
             std::thread::spawn(move || {
@@ -107,10 +118,11 @@ fn run2(
                     Err(err) => panic!(err),
                 };
 
-                let mut output_connection = match midi_out.connect(output_port, "midir_portname") {
-                    Ok(oc) => oc,
-                    Err(err) => panic!(err),
-                };
+                let mut output_connection =
+                    match midi_out.connect(&arc_output_port.lock().unwrap(), "midir_portname") {
+                        Ok(oc) => oc,
+                        Err(err) => panic!(err),
+                    };
                 {
                     // We're ignoring errors in here
                     let _ = output_connection.send(&[NOTE_ON_MSG, note, VELOCITY]);
