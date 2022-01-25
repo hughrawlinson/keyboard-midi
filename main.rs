@@ -3,16 +3,12 @@ extern crate ux;
 
 use std::error::Error;
 use std::io::{stdin, stdout, Write};
-use std::sync::{Arc, Mutex};
+use std::sync::mpsc;
 use std::thread::sleep;
 use std::time::{Duration, Instant};
 use ux::u7;
 
 use midir::{MidiOutput, MidiOutputPort};
-
-// type MusicalDuration = f32;
-// type MusicalNote = u8;
-// type MusicalScore<TimeUnit> = Vec<(MusicalNote, TimeUnit)>;
 
 #[derive(Copy, Clone)]
 struct MusicalScoreNote {
@@ -34,16 +30,32 @@ impl MusicalScore {
             None => Duration::from_secs(0),
         }
     }
+}
 
-    fn peek(&self) -> Option<MusicalScoreNote> {
-        match self.score.first() {
-            Some(_) => Some(self.score[0]),
-            None => None,
+struct MusicalScoreReader {
+    score: MusicalScore,
+    position: usize,
+}
+
+impl MusicalScoreReader {
+    fn new(score: MusicalScore) -> MusicalScoreReader {
+        MusicalScoreReader {
+            score: score,
+            position: 0,
         }
     }
 
+    fn peek(&self) -> Option<MusicalScoreNote> {
+        self.score.score.get(self.position).cloned()
+    }
+
     fn shift(&mut self) -> MusicalScoreNote {
-        self.score.remove(0)
+        self.position += 1;
+        self.score.score[self.position - 1]
+    }
+
+    fn length(&self) -> Duration {
+        self.score.length()
     }
 }
 
@@ -156,52 +168,51 @@ fn get_midi_output() -> Result<MidiOutputPort, Box<dyn Error>> {
 fn run2(score: MusicalScore, output_port: MidiOutputPort) -> Result<(), Box<dyn Error>> {
     let playback_position = Instant::now();
 
-    let playback_length = score.length();
+    let mut score_reader = MusicalScoreReader::new(score);
+    let playback_length = score_reader.length();
 
-    let arc_output_port = Arc::new(Mutex::new(output_port));
-    let arc_score = Arc::new(Mutex::new(score));
+    let (tx, rx) = mpsc::channel();
+
+    let midi_out = MidiOutput::new("Test Connection").unwrap();
+
+    let mut output_connection = midi_out.connect(&output_port, "midir_portname").unwrap();
 
     while playback_position.elapsed() < playback_length {
-        let score = Arc::clone(&arc_score);
-        let current_note = match score.lock().unwrap().peek() {
+        let current_note = match score_reader.peek() {
             Some(note) => note,
             None => break,
         };
-        let arc_output_port = Arc::clone(&arc_output_port);
+        let cloned_tx = tx.clone();
         if playback_position.elapsed() > current_note.start_time {
             std::thread::spawn(move || {
                 println!("Playing note: {}", current_note.midi_note);
                 const NOTE_ON_MSG: u8 = 0x90;
                 const NOTE_OFF_MSG: u8 = 0x80;
 
-                let midi_out = match MidiOutput::new("Test Connection") {
-                    Ok(output) => output,
-                    Err(err) => panic!(err),
-                };
-
-                let mut output_connection =
-                    match midi_out.connect(&arc_output_port.lock().unwrap(), "midir_portname") {
-                        Ok(oc) => oc,
-                        Err(err) => panic!(err),
-                    };
-                {
-                    // We're ignoring errors in here
-                    let _ = output_connection.send(&[
+                cloned_tx
+                    .send([
                         NOTE_ON_MSG,
                         u8::from(current_note.midi_note),
                         u8::from(current_note.velocity),
-                    ]);
-                    sleep(current_note.duration);
-                    let _ = output_connection.send(&[
+                    ])
+                    .unwrap();
+                sleep(current_note.duration);
+                cloned_tx
+                    .send([
                         NOTE_OFF_MSG,
                         u8::from(current_note.midi_note),
-                        0,
-                    ]);
-                }
+                        u8::from(current_note.velocity),
+                    ])
+                    .unwrap();
             });
-            score.lock().unwrap().shift();
+            score_reader.shift();
         }
-        sleep(Duration::from_millis(10));
+        sleep(Duration::from_millis(1));
     }
+
+    for received in rx {
+        output_connection.send(&received).unwrap();
+    }
+
     return Ok(());
 }
