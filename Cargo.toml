@@ -9,4 +9,3 @@ ux = "0.1.3"
 
 [[bin]]
 name = "keyboard-midi"
-path = "main.rs"
