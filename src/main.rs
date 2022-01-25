@@ -10,9 +10,8 @@ use ux::u7;
 
 use midir::{MidiOutput, MidiOutputPort};
 
-use keyboardmidi::MusicalScore;
-use keyboardmidi::MusicalScoreNote;
-use keyboardmidi::MusicalScoreReader;
+mod musical_score;
+use musical_score::{MusicalScore, MusicalScoreNote, MusicalScoreReader};
 
 fn main() {
   let tempo = 200;
