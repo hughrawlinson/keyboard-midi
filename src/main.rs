@@ -11,42 +11,35 @@ use ux::u7;
 use midir::{MidiOutput, MidiOutputPort};
 
 mod musical_score;
-use musical_score::{MusicalScore, MusicalScoreNote, MusicalScoreReader};
+use musical_score::{MusicalScore, MusicalScoreReader};
 
-fn main() {
-  let tempo: u32 = 200;
-  let quarter_note_duration: Duration = Duration::from_secs(60) / tempo;
+fn get_example_score(bpm: u32) -> MusicalScore {
+  let mut score = MusicalScore::new(bpm);
 
-  fn note(
-    midi_note: u7,
-    duration: f32,
-    start_time: f32,
-    velocity: u7,
-    quarter_note_duration: Duration,
-  ) -> MusicalScoreNote {
-    MusicalScoreNote::new(
-      midi_note,
-      duration,
-      start_time,
-      velocity,
-      quarter_note_duration,
+  for (note, duration, start_time, velocity) in vec![
+    (u7::new(54), 0.5, 1.0, u7::new(127)),
+    (u7::new(53), 0.5, 2.0, u7::new(127)),
+    (u7::new(51), 0.5, 3.0, u7::new(127)),
+    (u7::new(49), 0.5, 4.0, u7::new(127)),
+    (u7::new(47), 0.5, 5.0, u7::new(127)),
+    (u7::new(46), 0.5, 6.0, u7::new(127)),
+    (u7::new(44), 0.5, 7.0, u7::new(127)),
+    (u7::new(42), 0.5, 8.0, u7::new(127)),
+  ] {
+    score.add_note(
+      &note,
+      &score.timingsystem.quarter.mul_f32(duration),
+      &score.timingsystem.quarter.mul_f32(start_time),
+      &velocity,
     )
   }
 
-  let score: MusicalScore = MusicalScore {
-    score: vec![
-      note(u7::new(54), 0.5, 1.0, u7::new(127), quarter_note_duration),
-      note(u7::new(53), 0.5, 2.0, u7::new(127), quarter_note_duration),
-      note(u7::new(51), 0.5, 3.0, u7::new(127), quarter_note_duration),
-      note(u7::new(49), 0.5, 4.0, u7::new(127), quarter_note_duration),
-      note(u7::new(47), 0.5, 5.0, u7::new(127), quarter_note_duration),
-      note(u7::new(46), 0.5, 6.0, u7::new(127), quarter_note_duration),
-      note(u7::new(44), 0.5, 7.0, u7::new(127), quarter_note_duration),
-      note(u7::new(42), 0.5, 8.0, u7::new(127), quarter_note_duration),
-      note(u7::new(47), 0.5, 9.0, u7::new(127), quarter_note_duration),
-      note(u7::new(0), 0.5, 10.0, u7::new(127), quarter_note_duration),
-    ],
-  };
+  score
+}
+
+fn main() {
+  let bpm: u32 = 200;
+  let score = get_example_score(bpm);
 
   let output_connection_result = get_midi_output();
   if let Err(_) = output_connection_result {
