@@ -10,6 +10,23 @@ pub struct MusicalScoreNote {
   pub velocity: u7,
 }
 
+impl MusicalScoreNote {
+  pub fn new(
+    midi_note: u7,
+    duration: f32,
+    start_time: f32,
+    velocity: u7,
+    quarter_note_duration: Duration,
+  ) -> MusicalScoreNote {
+    MusicalScoreNote {
+      midi_note,
+      duration: quarter_note_duration.mul_f32(duration),
+      start_time: quarter_note_duration.mul_f32(start_time),
+      velocity,
+    }
+  }
+}
+
 #[derive(Clone)]
 pub struct MusicalScore {
   pub score: Vec<MusicalScoreNote>,

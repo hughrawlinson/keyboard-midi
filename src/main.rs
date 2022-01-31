@@ -14,71 +14,37 @@ mod musical_score;
 use musical_score::{MusicalScore, MusicalScoreNote, MusicalScoreReader};
 
 fn main() {
-  let tempo = 200;
-  let quarter_note_duration = Duration::from_secs(60) / tempo;
+  let tempo: u32 = 200;
+  let quarter_note_duration: Duration = Duration::from_secs(60) / tempo;
+
+  fn note(
+    midi_note: u7,
+    duration: f32,
+    start_time: f32,
+    velocity: u7,
+    quarter_note_duration: Duration,
+  ) -> MusicalScoreNote {
+    MusicalScoreNote::new(
+      midi_note,
+      duration,
+      start_time,
+      velocity,
+      quarter_note_duration,
+    )
+  }
 
   let score: MusicalScore = MusicalScore {
     score: vec![
-      MusicalScoreNote {
-        midi_note: u7::new(54),
-        duration: quarter_note_duration.mul_f32(0.5),
-        start_time: quarter_note_duration.mul_f32(1.0 * 0.5),
-        velocity: u7::new(127),
-      },
-      MusicalScoreNote {
-        midi_note: u7::new(53),
-        duration: quarter_note_duration.mul_f32(0.5),
-        start_time: quarter_note_duration.mul_f32(2.0 * 0.5),
-        velocity: u7::new(127),
-      },
-      MusicalScoreNote {
-        midi_note: u7::new(51),
-        duration: quarter_note_duration.mul_f32(0.5),
-        start_time: quarter_note_duration.mul_f32(3.0 * 0.5),
-        velocity: u7::new(127),
-      },
-      MusicalScoreNote {
-        midi_note: u7::new(49),
-        duration: quarter_note_duration.mul_f32(0.5),
-        start_time: quarter_note_duration.mul_f32(4.0 * 0.5),
-        velocity: u7::new(127),
-      },
-      MusicalScoreNote {
-        midi_note: u7::new(47),
-        duration: quarter_note_duration.mul_f32(0.5),
-        start_time: quarter_note_duration.mul_f32(5.0 * 0.5),
-        velocity: u7::new(127),
-      },
-      MusicalScoreNote {
-        midi_note: u7::new(46),
-        duration: quarter_note_duration.mul_f32(0.5),
-        start_time: quarter_note_duration.mul_f32(6.0 * 0.5),
-        velocity: u7::new(127),
-      },
-      MusicalScoreNote {
-        midi_note: u7::new(44),
-        duration: quarter_note_duration.mul_f32(0.5),
-        start_time: quarter_note_duration.mul_f32(7.0 * 0.5),
-        velocity: u7::new(127),
-      },
-      MusicalScoreNote {
-        midi_note: u7::new(42),
-        duration: quarter_note_duration.mul_f32(0.5),
-        start_time: quarter_note_duration.mul_f32(8.0 * 0.5),
-        velocity: u7::new(127),
-      },
-      MusicalScoreNote {
-        midi_note: u7::new(47),
-        duration: quarter_note_duration.mul_f32(0.5),
-        start_time: quarter_note_duration.mul_f32(9.0 * 0.5),
-        velocity: u7::new(127),
-      },
-      MusicalScoreNote {
-        midi_note: u7::new(0),
-        duration: quarter_note_duration.mul_f32(0.5),
-        start_time: quarter_note_duration.mul_f32(10.0 * 0.5),
-        velocity: u7::new(127),
-      },
+      note(u7::new(54), 0.5, 1.0, u7::new(127), quarter_note_duration),
+      note(u7::new(53), 0.5, 2.0, u7::new(127), quarter_note_duration),
+      note(u7::new(51), 0.5, 3.0, u7::new(127), quarter_note_duration),
+      note(u7::new(49), 0.5, 4.0, u7::new(127), quarter_note_duration),
+      note(u7::new(47), 0.5, 5.0, u7::new(127), quarter_note_duration),
+      note(u7::new(46), 0.5, 6.0, u7::new(127), quarter_note_duration),
+      note(u7::new(44), 0.5, 7.0, u7::new(127), quarter_note_duration),
+      note(u7::new(42), 0.5, 8.0, u7::new(127), quarter_note_duration),
+      note(u7::new(47), 0.5, 9.0, u7::new(127), quarter_note_duration),
+      note(u7::new(0), 0.5, 10.0, u7::new(127), quarter_note_duration),
     ],
   };
 
