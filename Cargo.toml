@@ -6,7 +6,7 @@ edition = "2018"
 
 [dependencies]
 midir = "0.8.0"
-ux = "0.1.4"
+ux = "0.1.5"
 
 [[bin]]
 name = "keyboardmidi"
