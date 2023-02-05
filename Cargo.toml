@@ -5,7 +5,7 @@ authors = ["Hugh Rawlinson <hughr2005@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-midir = "0.8.0"
+midir = "0.9.1"
 ux = "0.1.5"
 
 [[bin]]
